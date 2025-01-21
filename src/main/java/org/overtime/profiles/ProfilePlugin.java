@@ -245,6 +245,8 @@ public class ProfilePlugin extends JavaPlugin {
 
     private void showHelp(CommandSender sender) {
         sender.sendMessage(Component.text("Profile Plugin Help (v" + getPluginMeta().getVersion() + ")", NamedTextColor.GOLD));
+        //Github : https://github.com/overtimepog/profiles
+        sender.sendMessage(Component.text("Github : https://github.com/overtimepog/profiles", NamedTextColor.GOLD));
         sender.sendMessage(Component.text("Usage:", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text("/profile help - Show this help message", NamedTextColor.GREEN));
         sender.sendMessage(Component.text("/profile add bio <text> - Add or update your bio", NamedTextColor.GREEN));
