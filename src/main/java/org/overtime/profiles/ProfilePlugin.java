@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.logging.Level;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -24,15 +25,32 @@ public class ProfilePlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        getLogger().info("Initializing ProfilePlugin v" + getPluginMeta().getVersion());
         profilesDirectory = new File(getDataFolder(), "profiles");
+        
+        getLogger().info("Using profiles directory: " + profilesDirectory.getAbsolutePath());
+        
         if (!profilesDirectory.exists()) {
-            profilesDirectory.mkdirs();
+            getLogger().info("Creating profiles directory...");
+            boolean created = profilesDirectory.mkdirs();
+            if (created) {
+                getLogger().info("Created profiles directory successfully");
+            } else {
+                getLogger().warning("Failed to create profiles directory!");
+            }
         }
+        
         getLogger().info("ProfilePlugin enabled!");
+        getLogger().info("Hooks initialized - Ready to handle profile commands");
     }
 
     @Override
     public void onDisable() {
+        getLogger().info("Shutting down ProfilePlugin...");
+        int activeProfiles = profilesDirectory.list().length;
+        if (activeProfiles > 0) {
+            getLogger().warning("Shutting down with " + activeProfiles + " active profiles - Data may be at risk!");
+        }
         getLogger().info("ProfilePlugin disabled!");
     }
 
@@ -109,7 +127,7 @@ public class ProfilePlugin extends JavaPlugin {
                 if (profile != null) {
                     sender.sendMessage(Component.text("Profile for " + targetPlayer + ":\n" + profile, NamedTextColor.AQUA));
                 } else {
-                    sender.sendMessage(Component.text("No profile found for " + targetPlayer + ".", NamedTextColor.RED));
+                    showHelp(sender);
                 }
                 return true;
             }
@@ -122,14 +140,17 @@ public class ProfilePlugin extends JavaPlugin {
     }
 
     private void addBioToProfile(String playerName, String bio) {
+        getLogger().info(playerName + " is updating their bio");
         JsonObject profile = loadProfileAsJson(playerName);
         profile.addProperty("bio", bio);
         saveProfile(playerName, profile);
+        getLogger().finer("Bio updated for " + playerName + ": " + gson.toJson(profile.get("bio")));
 
         Bukkit.getPlayer(playerName).sendMessage(Component.text("Your bio has been updated!", NamedTextColor.GREEN));
     }
 
     private void addNamedLinkToProfile(String playerName, String name, String url) {
+        getLogger().info(playerName + " adding link: " + name + " => " + url);
         JsonObject profile = loadProfileAsJson(playerName);
 
         JsonObject links = profile.has("links") ? profile.getAsJsonObject("links") : new JsonObject();
@@ -152,6 +173,7 @@ public class ProfilePlugin extends JavaPlugin {
     }
 
     private void deleteNamedLinkFromProfile(String playerName, String name) {
+        getLogger().info(playerName + " removing link: " + name);
         JsonObject profile = loadProfileAsJson(playerName);
 
         if (!profile.has("links")) {
@@ -195,21 +217,34 @@ public class ProfilePlugin extends JavaPlugin {
 
     private void deleteProfile(String playerName) {
         Path profilePath = Paths.get(profilesDirectory.getAbsolutePath(), playerName + ".json");
+        getLogger().info("Deleting profile for " + playerName + " at " + profilePath);
         try {
-            Files.deleteIfExists(profilePath);
+            boolean deleted = Files.deleteIfExists(profilePath);
+            if (deleted) {
+                getLogger().info("Successfully deleted profile for " + playerName);
+            } else {
+                getLogger().warning("No profile found to delete for " + playerName);
+            }
         } catch (IOException e) {
             getLogger().severe("Failed to delete profile for " + playerName + ": " + e.getMessage());
+            getLogger().log(Level.FINE, "Stack trace", e);
         }
     }
 
     private String loadProfile(String playerName) {
         Path profilePath = Paths.get(profilesDirectory.getAbsolutePath(), playerName + ".json");
+        getLogger().finer("Loading profile for " + playerName + " from " + profilePath);
         if (Files.exists(profilePath)) {
             try {
-                return new String(Files.readAllBytes(profilePath));
+                String content = new String(Files.readAllBytes(profilePath));
+                getLogger().finer("Successfully loaded profile for " + playerName);
+                return content;
             } catch (IOException e) {
                 getLogger().severe("Failed to load profile for " + playerName + ": " + e.getMessage());
+                getLogger().log(Level.FINE, "Stack trace: ", e);
             }
+        } else {
+            getLogger().log(Level.SEVERE, "No profile found for " + playerName);
         }
         return null;
     }
@@ -229,10 +264,14 @@ public class ProfilePlugin extends JavaPlugin {
 
     private void saveProfile(String playerName, JsonObject profile) {
         Path profilePath = Paths.get(profilesDirectory.getAbsolutePath(), playerName + ".json");
+        getLogger().finer("Saving profile for " + playerName + " to " + profilePath);
         try {
             Files.write(profilePath, gson.toJson(profile).getBytes());
+            getLogger().info("Successfully saved profile for " + playerName);
+            getLogger().finer("Profile content: " + gson.toJson(profile));
         } catch (IOException e) {
             getLogger().severe("Failed to save profile for " + playerName + ": " + e.getMessage());
+            getLogger().log(Level.FINER, "Stack trace: ", e);
         }
     }
 }
