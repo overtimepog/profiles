@@ -2,6 +2,8 @@ package org.overtime.profiles;
 
 import org.bukkit.Bukkit;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -40,6 +42,9 @@ public class ProfilePlugin extends JavaPlugin {
             }
         }
         
+        // Register command executor
+        getCommand("profile").setExecutor(this);
+        
         getLogger().info("ProfilePlugin enabled!");
         getLogger().info("Hooks initialized - Ready to handle profile commands");
     }
@@ -58,7 +63,7 @@ public class ProfilePlugin extends JavaPlugin {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (command.getName().equalsIgnoreCase("profile")) {
             if (args.length == 0) {
-                sender.sendMessage(Component.text("Use /profile add <field> <value>, /profile del <field>, or /profile <username>.", NamedTextColor.GREEN));
+                showHelp(sender);
                 return true;
             }
 
@@ -120,14 +125,56 @@ public class ProfilePlugin extends JavaPlugin {
                 return true;
             }
 
+            if (args[0].equalsIgnoreCase("help")) {
+                showHelp(sender);
+                return true;
+            }
+
             if (args.length == 1) {
                 String targetPlayer = args[0];
-                String profile = loadProfile(targetPlayer);
+                JsonObject profile = loadProfileAsJson(targetPlayer);
 
-                if (profile != null) {
-                    sender.sendMessage(Component.text("Profile for " + targetPlayer + ":\n" + profile, NamedTextColor.AQUA));
+                if (profile.size() > 0) {
+                    Component header = Component.text()
+                        .append(Component.text("Profile for ", NamedTextColor.GOLD))
+                        .append(Component.text(targetPlayer, NamedTextColor.AQUA))
+                        .build();
+                    
+                    sender.sendMessage(header);
+                    
+                    // Bio section
+                    if (profile.has("bio")) {
+                        sender.sendMessage(Component.text()
+                            .append(Component.text("Bio: ", NamedTextColor.GOLD))
+                            .append(Component.text(profile.get("bio").getAsString(), NamedTextColor.WHITE))
+                            .build());
+                    } else {
+                        sender.sendMessage(Component.text("Bio: Not available", NamedTextColor.GRAY));
+                    }
+
+                    // Links section
+                    if (profile.has("links")) {
+                        sender.sendMessage(Component.text("Links:", NamedTextColor.GOLD));
+                        JsonObject links = profile.getAsJsonObject("links");
+                        links.entrySet().forEach(entry -> {
+                            String url = entry.getValue().getAsString();
+                            sender.sendMessage(Component.text()
+                                .append(Component.text("• " + entry.getKey() + ": ", NamedTextColor.AQUA))
+                                .append(Component.text(url, NamedTextColor.BLUE)
+                                    .clickEvent(ClickEvent.openUrl(url))
+                                    .hoverEvent(HoverEvent.showText(
+                                        Component.text("Click to open link", NamedTextColor.GREEN)
+                                    )))
+                                .build());
+                        });
+                    } else {
+                        sender.sendMessage(Component.text("Links: None added", NamedTextColor.GRAY));
+                    }
                 } else {
-                    showHelp(sender);
+                    sender.sendMessage(Component.text()
+                        .append(Component.text("No profile found for ", NamedTextColor.RED))
+                        .append(Component.text(targetPlayer, NamedTextColor.AQUA))
+                        .build());
                 }
                 return true;
             }
@@ -204,7 +251,7 @@ public class ProfilePlugin extends JavaPlugin {
     }
 
     private void showHelp(CommandSender sender) {
-        sender.sendMessage(Component.text("Profile Plugin Help (v1.1.0)", NamedTextColor.GOLD));
+        sender.sendMessage(Component.text("Profile Plugin Help (v" + getPluginMeta().getVersion() + ")", NamedTextColor.GOLD));
         sender.sendMessage(Component.text("Usage:", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text("/profile help - Show this help message", NamedTextColor.GREEN));
         sender.sendMessage(Component.text("/profile add bio <text> - Add or update your bio", NamedTextColor.GREEN));
@@ -229,24 +276,6 @@ public class ProfilePlugin extends JavaPlugin {
             getLogger().severe("Failed to delete profile for " + playerName + ": " + e.getMessage());
             getLogger().log(Level.FINE, "Stack trace", e);
         }
-    }
-
-    private String loadProfile(String playerName) {
-        Path profilePath = Paths.get(profilesDirectory.getAbsolutePath(), playerName + ".json");
-        getLogger().finer("Loading profile for " + playerName + " from " + profilePath);
-        if (Files.exists(profilePath)) {
-            try {
-                String content = new String(Files.readAllBytes(profilePath));
-                getLogger().finer("Successfully loaded profile for " + playerName);
-                return content;
-            } catch (IOException e) {
-                getLogger().severe("Failed to load profile for " + playerName + ": " + e.getMessage());
-                getLogger().log(Level.FINE, "Stack trace: ", e);
-            }
-        } else {
-            getLogger().log(Level.SEVERE, "No profile found for " + playerName);
-        }
-        return null;
     }
 
     private JsonObject loadProfileAsJson(String playerName) {
