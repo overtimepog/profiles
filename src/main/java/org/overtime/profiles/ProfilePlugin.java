@@ -5,6 +5,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -84,9 +85,9 @@ public class ProfilePlugin extends JavaPlugin {
                     String bio = String.join(" ", args).substring(args[0].length() + args[1].length() + 2);
                     addBioToProfile(player.getName(), bio);
                 } else {
-                    String linkName = args[1];
-                    String linkUrl = String.join(" ", args).substring(args[0].length() + args[1].length() + 2);
-                    addNamedLinkToProfile(player.getName(), linkName, linkUrl);
+                    String linkLabel = args[1];
+                    String url = String.join(" ", args).substring(args[0].length() + args[1].length() + 2);
+                    addNamedLinkToProfile(player.getName(), linkLabel, url);
                 }
                 return true;
             }
@@ -138,10 +139,8 @@ public class ProfilePlugin extends JavaPlugin {
                     
                     // Bio section
                     if (profile.has("bio")) {
-                        sender.sendMessage(Component.text()
-                            .append(Component.text("Bio: ", NamedTextColor.GOLD))
-                            .append(Component.text(profile.get("bio").getAsString(), NamedTextColor.WHITE))
-                            .build());
+                        sender.sendMessage(Component.text("Bio: ", NamedTextColor.GOLD)
+                                .append(parseFormattedText(profile.get("bio").getAsString())));
                     } else {
                         sender.sendMessage(Component.text("Bio: Not available", NamedTextColor.GRAY));
                     }
@@ -152,7 +151,7 @@ public class ProfilePlugin extends JavaPlugin {
                         links.entrySet().forEach(entry -> {
                             String url = entry.getValue().getAsString();
                             sender.sendMessage(Component.text()
-                                .append(Component.text("• " + entry.getKey() + ": ", NamedTextColor.AQUA))
+                                .append(parseFormattedText("• " + entry.getKey() + ": "))
                                 .append(Component.text(url, NamedTextColor.BLUE)
                                     .clickEvent(ClickEvent.openUrl(url))
                                     .hoverEvent(HoverEvent.showText(
@@ -233,6 +232,49 @@ public class ProfilePlugin extends JavaPlugin {
         saveProfile(playerName, profile);
 
         Bukkit.getPlayer(playerName).sendMessage(Component.text("Link '" + name + "' removed from your profile!", NamedTextColor.GREEN));
+    }
+
+    private Component parseFormattedText(String text) {
+        Component component = Component.empty();
+        String[] parts = text.split("(?=&.)");
+        for (String part : parts) {
+            if (part.startsWith("&")) {
+                String code = part.substring(1, 2);
+                String content = part.substring(2);
+
+                switch (code) {
+                    case "0": component = component.append(Component.text(content).color(NamedTextColor.BLACK)); break;
+                    case "1": component = component.append(Component.text(content).color(NamedTextColor.DARK_BLUE)); break;
+                    case "2": component = component.append(Component.text(content).color(NamedTextColor.DARK_GREEN)); break;
+                    case "3": component = component.append(Component.text(content).color(NamedTextColor.DARK_AQUA)); break;
+                    case "4": component = component.append(Component.text(content).color(NamedTextColor.DARK_RED)); break;
+                    case "5": component = component.append(Component.text(content).color(NamedTextColor.DARK_PURPLE)); break;
+                    case "6": component = component.append(Component.text(content).color(NamedTextColor.GOLD)); break;
+                    case "7": component = component.append(Component.text(content).color(NamedTextColor.GRAY)); break;
+                    case "8": component = component.append(Component.text(content).color(NamedTextColor.DARK_GRAY)); break;
+                    case "9": component = component.append(Component.text(content).color(NamedTextColor.BLUE)); break;
+                    case "a": component = component.append(Component.text(content).color(NamedTextColor.GREEN)); break;
+                    case "b": component = component.append(Component.text(content).color(NamedTextColor.AQUA)); break;
+                    case "c": component = component.append(Component.text(content).color(NamedTextColor.RED)); break;
+                    case "d": component = component.append(Component.text(content).color(NamedTextColor.LIGHT_PURPLE)); break;
+                    case "e": component = component.append(Component.text(content).color(NamedTextColor.YELLOW)); break;
+                    case "f": component = component.append(Component.text(content).color(NamedTextColor.WHITE)); break;
+                    case "l": component = component.append(Component.text(content).decorate(TextDecoration.BOLD)); break;
+                    case "m": component = component.append(Component.text(content).decorate(TextDecoration.STRIKETHROUGH)); break;
+                    case "n": component = component.append(Component.text(content).decorate(TextDecoration.UNDERLINED)); break;
+                    case "o": component = component.append(Component.text(content).decorate(TextDecoration.ITALIC)); break;
+                    case "r": component = component.append(Component.text(content)
+                            .decoration(TextDecoration.BOLD, false)
+                            .decoration(TextDecoration.ITALIC, false)
+                            .decoration(TextDecoration.STRIKETHROUGH, false)
+                            .decoration(TextDecoration.UNDERLINED, false)); break;
+                    default: component = component.append(Component.text(part)); break;
+                }
+            } else {
+                component = component.append(Component.text(part));
+            }
+        }
+        return component;
     }
 
     private void deleteProfileField(String playerName, String field) {
