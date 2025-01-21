@@ -69,7 +69,7 @@ public class ProfilePlugin extends JavaPlugin {
 
             if (args[0].equalsIgnoreCase("add")) {
                 if (args.length < 3) {
-                    sender.sendMessage(Component.text("Usage: /profile add <bio|link> <value>", NamedTextColor.RED));
+                    sender.sendMessage(Component.text("Usage: /profile add <bio|label> <value>", NamedTextColor.RED));
                     return true;
                 }
                 if (!(sender instanceof Player)) {
@@ -83,16 +83,10 @@ public class ProfilePlugin extends JavaPlugin {
                 if (field.equals("bio")) {
                     String bio = String.join(" ", args).substring(args[0].length() + args[1].length() + 2);
                     addBioToProfile(player.getName(), bio);
-                } else if (field.equals("link")) {
-                    if (args.length < 4) {
-                        player.sendMessage(Component.text("Usage: /profile add link <name> <url>", NamedTextColor.RED));
-                        return true;
-                    }
-                    String linkName = args[2];
-                    String linkUrl = String.join(" ", args).substring(args[0].length() + args[1].length() + args[2].length() + 3);
-                    addNamedLinkToProfile(player.getName(), linkName, linkUrl);
                 } else {
-                    sender.sendMessage(Component.text("Field must be 'bio' or 'link'.", NamedTextColor.RED));
+                    String linkName = args[1];
+                    String linkUrl = String.join(" ", args).substring(args[0].length() + args[1].length() + 2);
+                    addNamedLinkToProfile(player.getName(), linkName, linkUrl);
                 }
                 return true;
             }
@@ -154,7 +148,6 @@ public class ProfilePlugin extends JavaPlugin {
 
                     // Links section
                     if (profile.has("links")) {
-                        sender.sendMessage(Component.text("Links:", NamedTextColor.GOLD));
                         JsonObject links = profile.getAsJsonObject("links");
                         links.entrySet().forEach(entry -> {
                             String url = entry.getValue().getAsString();
@@ -255,7 +248,7 @@ public class ProfilePlugin extends JavaPlugin {
         sender.sendMessage(Component.text("Usage:", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text("/profile help - Show this help message", NamedTextColor.GREEN));
         sender.sendMessage(Component.text("/profile add bio <text> - Add or update your bio", NamedTextColor.GREEN));
-        sender.sendMessage(Component.text("/profile add link <name> <url> - Add a named link", NamedTextColor.GREEN));
+        sender.sendMessage(Component.text("/profile add <label> <url> - Add a link", NamedTextColor.GREEN));
         sender.sendMessage(Component.text("/profile del bio - Delete your bio", NamedTextColor.RED));
         sender.sendMessage(Component.text("/profile del link <name> - Delete a named link", NamedTextColor.RED));
         sender.sendMessage(Component.text("/profile del all - Delete entire profile", NamedTextColor.RED));
