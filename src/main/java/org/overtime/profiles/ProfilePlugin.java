@@ -237,44 +237,61 @@ public class ProfilePlugin extends JavaPlugin {
     private Component parseFormattedText(String text) {
         Component component = Component.empty();
         String[] parts = text.split("(?=&.)");
+        NamedTextColor currentColor = NamedTextColor.WHITE;
+        TextDecoration[] decorations = new TextDecoration[0];
+
         for (String part : parts) {
             if (part.startsWith("&")) {
                 String code = part.substring(1, 2);
                 String content = part.substring(2);
 
                 switch (code) {
-                    case "0": component = component.append(Component.text(content).color(NamedTextColor.BLACK)); break;
-                    case "1": component = component.append(Component.text(content).color(NamedTextColor.DARK_BLUE)); break;
-                    case "2": component = component.append(Component.text(content).color(NamedTextColor.DARK_GREEN)); break;
-                    case "3": component = component.append(Component.text(content).color(NamedTextColor.DARK_AQUA)); break;
-                    case "4": component = component.append(Component.text(content).color(NamedTextColor.DARK_RED)); break;
-                    case "5": component = component.append(Component.text(content).color(NamedTextColor.DARK_PURPLE)); break;
-                    case "6": component = component.append(Component.text(content).color(NamedTextColor.GOLD)); break;
-                    case "7": component = component.append(Component.text(content).color(NamedTextColor.GRAY)); break;
-                    case "8": component = component.append(Component.text(content).color(NamedTextColor.DARK_GRAY)); break;
-                    case "9": component = component.append(Component.text(content).color(NamedTextColor.BLUE)); break;
-                    case "a": component = component.append(Component.text(content).color(NamedTextColor.GREEN)); break;
-                    case "b": component = component.append(Component.text(content).color(NamedTextColor.AQUA)); break;
-                    case "c": component = component.append(Component.text(content).color(NamedTextColor.RED)); break;
-                    case "d": component = component.append(Component.text(content).color(NamedTextColor.LIGHT_PURPLE)); break;
-                    case "e": component = component.append(Component.text(content).color(NamedTextColor.YELLOW)); break;
-                    case "f": component = component.append(Component.text(content).color(NamedTextColor.WHITE)); break;
-                    case "l": component = component.append(Component.text(content).decorate(TextDecoration.BOLD)); break;
-                    case "m": component = component.append(Component.text(content).decorate(TextDecoration.STRIKETHROUGH)); break;
-                    case "n": component = component.append(Component.text(content).decorate(TextDecoration.UNDERLINED)); break;
-                    case "o": component = component.append(Component.text(content).decorate(TextDecoration.ITALIC)); break;
-                    case "r": component = component.append(Component.text(content)
-                            .decoration(TextDecoration.BOLD, false)
-                            .decoration(TextDecoration.ITALIC, false)
-                            .decoration(TextDecoration.STRIKETHROUGH, false)
-                            .decoration(TextDecoration.UNDERLINED, false)); break;
+                    case "0": currentColor = NamedTextColor.BLACK; break;
+                    case "1": currentColor = NamedTextColor.DARK_BLUE; break;
+                    case "2": currentColor = NamedTextColor.DARK_GREEN; break;
+                    case "3": currentColor = NamedTextColor.DARK_AQUA; break;
+                    case "4": currentColor = NamedTextColor.DARK_RED; break;
+                    case "5": currentColor = NamedTextColor.DARK_PURPLE; break;
+                    case "6": currentColor = NamedTextColor.GOLD; break;
+                    case "7": currentColor = NamedTextColor.GRAY; break;
+                    case "8": currentColor = NamedTextColor.DARK_GRAY; break;
+                    case "9": currentColor = NamedTextColor.BLUE; break;
+                    case "a": currentColor = NamedTextColor.GREEN; break;
+                    case "b": currentColor = NamedTextColor.AQUA; break;
+                    case "c": currentColor = NamedTextColor.RED; break;
+                    case "d": currentColor = NamedTextColor.LIGHT_PURPLE; break;
+                    case "e": currentColor = NamedTextColor.YELLOW; break;
+                    case "f": currentColor = NamedTextColor.WHITE; break;
+                    case "l": decorations = appendDecoration(decorations, TextDecoration.BOLD); break;
+                    case "m": decorations = appendDecoration(decorations, TextDecoration.STRIKETHROUGH); break;
+                    case "n": decorations = appendDecoration(decorations, TextDecoration.UNDERLINED); break;
+                    case "o": decorations = appendDecoration(decorations, TextDecoration.ITALIC); break;
+                    case "r": 
+                        currentColor = NamedTextColor.WHITE;
+                        decorations = new TextDecoration[0];
+                        break;
                     default: component = component.append(Component.text(part)); break;
+                }
+
+                if (!content.isEmpty()) {
+                    Component textComponent = Component.text(content).color(currentColor);
+                    for (TextDecoration decoration : decorations) {
+                        textComponent = textComponent.decorate(decoration);
+                    }
+                    component = component.append(textComponent);
                 }
             } else {
                 component = component.append(Component.text(part));
             }
         }
         return component;
+    }
+
+    private TextDecoration[] appendDecoration(TextDecoration[] decorations, TextDecoration newDecoration) {
+        TextDecoration[] newDecorations = new TextDecoration[decorations.length + 1];
+        System.arraycopy(decorations, 0, newDecorations, 0, decorations.length);
+        newDecorations[decorations.length] = newDecoration;
+        return newDecorations;
     }
 
     private void deleteProfileField(String playerName, String field) {
